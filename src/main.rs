@@ -5,8 +5,18 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 
+#[cfg(target_os = "windows")]
+const NOTIFICATION_SOUND: &[u8] = include_bytes!("../assets/notification.wav");
+#[cfg(target_os = "windows")]
+const STOP_SOUND: &[u8] = include_bytes!("../assets/stop.wav");
+#[cfg(target_os = "windows")]
+const SOUND_EXT: &str = "wav";
+
+#[cfg(not(target_os = "windows"))]
 const NOTIFICATION_SOUND: &[u8] = include_bytes!("../assets/notification.aiff");
+#[cfg(not(target_os = "windows"))]
 const STOP_SOUND: &[u8] = include_bytes!("../assets/stop.aiff");
+#[cfg(not(target_os = "windows"))]
 const SOUND_EXT: &str = "aiff";
 
 #[derive(Parser)]
@@ -89,7 +99,21 @@ fn player_command(path: &std::path::Path) -> Result<(), String> {
     Err("no audio player found (install pulseaudio, alsa-utils, or ffmpeg)".into())
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(target_os = "windows")]
+fn player_command(path: &std::path::Path) -> Result<(), String> {
+    let path_str = path.to_string_lossy().replace('\'', "''");
+    let script = format!(
+        "$p = New-Object Media.SoundPlayer '{}'; $p.PlaySync();",
+        path_str
+    );
+    Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", &script])
+        .status()
+        .map_err(|e| format!("powershell: {e}"))?;
+    Ok(())
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 fn player_command(_path: &std::path::Path) -> Result<(), String> {
     Err("platform not supported yet".into())
 }

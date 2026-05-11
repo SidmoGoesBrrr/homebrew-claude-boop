@@ -4,12 +4,20 @@ Notifications for [Claude Code](https://docs.claude.com/en/docs/claude-code). Pl
 
 ## Install
 
+**macOS / Linux (Homebrew):**
+
 ```sh
 brew install akeenkarkare/claude-boop/claude-boop
 claude-boop install
 ```
 
-That's it — `install` patches `~/.claude/settings.json` to wire up `Notification` and `Stop` hooks. It preserves any existing hooks and is safe to run twice.
+**Windows:** download `claude-boop-vX.Y.Z-x86_64-pc-windows-msvc.zip` (or `aarch64-pc-windows-msvc` on ARM) from the [latest release](https://github.com/akeenkarkare/homebrew-claude-boop/releases/latest), extract `claude-boop.exe` somewhere on your `PATH`, then:
+
+```powershell
+claude-boop install
+```
+
+That's it — `install` patches `~/.claude/settings.json` (`%USERPROFILE%\.claude\settings.json` on Windows) to wire up `Notification` and `Stop` hooks. It preserves any existing hooks and is safe to run twice.
 
 ## Commands
 
@@ -24,13 +32,13 @@ The `play` commands are what the hooks invoke — you usually don't run them by 
 
 ## Custom sounds
 
-Sounds are compiled into the binary. To use your own, clone the repo, drop replacements into `assets/notification.aiff` and `assets/stop.aiff` (any format `afplay`/`paplay` can handle, renamed `.aiff`), and `cargo install --path .`.
+Sounds are compiled into the binary. To use your own, clone the repo, drop replacements into `assets/notification.{aiff,wav}` and `assets/stop.{aiff,wav}` (the `.aiff` files are used on macOS/Linux, the `.wav` files on Windows), then `cargo install --path .`.
 
 ## Platforms
 
 - **macOS** — uses `afplay` (built in)
 - **Linux** — uses `paplay`, `aplay`, or `ffplay` (whichever's installed)
-- **Windows** — not yet supported
+- **Windows** — uses PowerShell's built-in `System.Media.SoundPlayer`
 
 ## Uninstall
 

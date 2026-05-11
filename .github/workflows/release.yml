@@ -21,6 +21,10 @@ jobs:
             os: ubuntu-latest
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +42,8 @@ jobs:
           mkdir -p .cargo
           printf '[target.aarch64-unknown-linux-gnu]\nlinker = "aarch64-linux-gnu-gcc"\n' > .cargo/config.toml
       - run: cargo build --release --target ${{ matrix.target }}
-      - name: Package
+      - name: Package (unix)
+        if: runner.os != 'Windows'
         run: |
           name="claude-boop-${GITHUB_REF_NAME}-${{ matrix.target }}"
           mkdir -p "dist/$name"
@@ -46,10 +51,24 @@ jobs:
           cp README.md LICENSE* "dist/$name/" 2>/dev/null || true
           tar -czf "dist/$name.tar.gz" -C dist "$name"
           (cd dist && shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256")
+      - name: Package (windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $name = "claude-boop-$env:GITHUB_REF_NAME-${{ matrix.target }}"
+          New-Item -ItemType Directory -Force -Path "dist/$name" | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/claude-boop.exe" "dist/$name/"
+          if (Test-Path README.md) { Copy-Item README.md "dist/$name/" }
+          Get-ChildItem -Path . -Filter LICENSE* -ErrorAction SilentlyContinue | ForEach-Object { Copy-Item $_.FullName "dist/$name/" }
+          Compress-Archive -Path "dist/$name/*" -DestinationPath "dist/$name.zip"
+          $hash = (Get-FileHash "dist/$name.zip" -Algorithm SHA256).Hash.ToLower()
+          "$hash  $name.zip" | Out-File -FilePath "dist/$name.zip.sha256" -Encoding ascii
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
-          path: dist/*.tar.gz*
+          path: |
+            dist/*.tar.gz*
+            dist/*.zip*
 
   release:
     needs: build

@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -21,5 +21,9 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y pulseaudio-utils
       - run: cargo build --release --verbose
       - run: cargo test --verbose
-      - name: Smoke test --help
+      - name: Smoke test --help (unix)
+        if: runner.os != 'Windows'
         run: ./target/release/claude-boop --help
+      - name: Smoke test --help (windows)
+        if: runner.os == 'Windows'
+        run: ./target/release/claude-boop.exe --help
